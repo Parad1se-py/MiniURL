@@ -1,1 +1,1 @@
-"# Mini-URL" 
+# Mini-URL - Shorten your URLs completely for free.
