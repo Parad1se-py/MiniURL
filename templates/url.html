@@ -1,0 +1,15 @@
+{ %extends "base.html" % }
+{ % block title % }shorten URLs{ % endblock % }
+
+{ % block content % }
+<form action="#", method="post">
+    <label for="url">Enter an https:// URL:</label>
+
+    <input type="url", name="url", id="url"
+        placeholder="https://my-cool-app.com",
+        pattern="https://.*", size="50"
+        required>
+    <br>
+    <input type="submit" value="Shorten!" class="btn btn-primary">
+</form>
+{ % endblock % }
