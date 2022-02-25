@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, abort, redirect, render_template, request, session
+from flask import Flask, redirect, render_template, request
 
 from utility.decorators import *
 
@@ -36,6 +36,7 @@ def login():
 def callback():
     pass
 
+@login_is_required
 @app.route('/logout')
 def logout():
     pass
