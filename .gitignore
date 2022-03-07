@@ -1,3 +1,4 @@
 .env
 MiniURL-VENV
 utility/__pycache__
+.vscode
