@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, redirect, render_template, request
 
-from utility.decorators import *
+from utility.database import *
 
 app = Flask("Mini URL")
 load_dotenv()
