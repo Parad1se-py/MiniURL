@@ -25,5 +25,12 @@ def url():
 def index():
     return render_template('base.html')
 
+@app.route('/<short_url>')
+def redirection(short_url):
+    if not check_if_exists(short_url):
+        return render_template('error.html')
+    else:
+        return redirect(get_long_url(short_url))
+
 if __name__ == '__main__':
     app.run(port=2222, debug=True)

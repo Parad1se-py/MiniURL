@@ -5,8 +5,6 @@ import random
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from app import url
-
 # load .env file
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
@@ -14,40 +12,55 @@ MONGO_URI = os.getenv("MONGO_URI")
 # connection with the databse
 client = MongoClient(MONGO_URI)
 db = client.miniurl
-collection = db.urls
+urls = db.urls
 
-def create_account(email:str, passw:str):
+def create_account(_id:str, passw:str):
     """Create a new account if not already existing
 
     Args:
-        email (str): email of the account
+        _id (str): _id of the account
         passw (str): password of the account
 
     Returns:
         list: 0th element returns True, 1st element returns mongodb account object
     """
-    if bool(db.collection.find_one( {"_id": email} )):
+    if bool(urls.find_one( {"_id": _id} )):
         return [False, 'Account already exists']
-    
-    obj = {
-            "id_": email,
+
+    urls.insert_one(
+        {
+            "_id": _id,
             "password": passw,
-            "urls": {},
+            "urls": [],
             "free": 5,
             "paid": 0
         }
-
-    db.collection.insert_one(
-        obj
     )
 
-    return [True, obj]
+    return [True, urls.find_one( {"_id": _id} )]
+
+def delete_account(_id:str):
+    """Delete an existing account
+
+    Args:
+        _id (str): the _id of the account
+
+    Returns:
+        list: 0th element returns bool (True/False), 1st element returns statement
+    """
+    if not bool(urls.find_one( {"_id": _id} )):
+        return [False, 'Account not found']
+    
+    urls.delete_one(
+        { "_id": _id }
+    )
+    return [True, 'Account successfully deleted']
 
 def add_url(account:str, long:str, short:str, free:bool):
     """Add a new URL to the account
 
     Args:
-        account (str): email of the account
+        account (str): _id of the account
         long (str): the actual URL
         short (str): the short version of the URL
         free (bool): True if the URL is free, False if it is paid for
@@ -55,65 +68,72 @@ def add_url(account:str, long:str, short:str, free:bool):
     Returns:
         list: 0th element returns bool (True/False), 1st element returns statement
     """
-    if not bool(db.collection.find_one( {"_id": account} )):
+    if not bool(urls.find_one( {"_id": account} )):
         return [False, 'Account not found']
 
-    for i in db.collection.find_one( {"_id": account} )['urls']:
+    for i in urls.find_one( {"_id": account} )['urls']:
         if i['long'] == long:
             return [False, 'URL already exists']
         
-    collection.update(
-        {'email': account},
-        {'$set': {f'urls.{short}': {
-            'long'  : long,
-            'short' : short,
-            'clicks': 0
-        }}}
+    obj = {'short': short,
+           'long': long,
+           'clicks': 0
+          }
+
+    db.urls.update_one(
+        {'_id': account},
+        {'$push': 
+            {'urls': 
+               {short: obj}}
+        }
     )
 
     if free:
-        collection.update(
-            {'email': account},
-            {'$inc': {'free': -1}}
+        urls.update_one(
+            {'_id': account},
+            {'$inc': 
+                {'free': -1}
+            }
         )
     else:
-        collection.update(
-            {'email': account},
-            {'$inc': {'paid': -1}}
+        urls.update_one(
+            {'_id': account},
+            {'$inc':
+                {'paid': -1}
+            }
         )
 
+    print('Added')
     return [True, 'Worked']
 
 def delete_url(account:str, short:str, free:bool):
     """Delete a URL from the account if it exists.
 
     Args:
-        account (str): email of the account
+        account (str): _id of the account
         short (str): the short version of the URL
         free (bool): True if the URL is free, False if it is paid for
 
     Returns:
         list: 0th element returns bool (True/False), 1st element returns statement
     """    
-    if not bool(db.collection.find_one( {"_id": account} )):
+    if not bool(urls.find_one( {"_id": account} )):
         return [False, 'Account not found']
-    
-    for i in db.collection.find_one( {"_id": account} )['urls']:
+
+    for i in urls.find_one( {"_id": account} )['urls']:
         if i['short'] == short:
-            collection.update(
-                {'email': account},
-                {'$unset': {f'urls.{short}': 1}}
+            urls.update(
+                {'_id': account},
+                {"$pull": {'urls': {'short': short}}}
             )
             if free:
-                collection.update(
-                    {'email': account},
+                urls.update(
+                    {'_id': account},
                     {'$inc': {'free': 1}}
                 )
             return [True, 'Worked']
         else:
             continue
-
-    return [False, 'URL already exists']
 
 def check_if_exists(short:str):
     """Check if the short url already exists
@@ -124,7 +144,13 @@ def check_if_exists(short:str):
     Returns:
         bool: True if the URL exists, False if it doesn't
     """
-    return any(short in i['urls'] for i in collection.find())
+    for i in urls.find( {} ):
+        for j in i['urls']:
+            if j['short'] == short:
+                return True
+            else:
+                continue
+    return False
 
 def create_url():
     """Creates a new random url
@@ -132,9 +158,28 @@ def create_url():
     Returns:
         str: the new random url
     """
-    letters = string.ascii_lowercase + string.ascii_uppercase
+    letters = string.ascii_lowercase + string.ascii_uppercase + string.digits
     while True:
-        rand_letters = random.choices(letters, k=3)
+        rand_letters = random.choices(letters, k=5)
         rand_letters = "".join(rand_letters)
         if not check_if_exists(rand_letters):
+            print(rand_letters)
             return rand_letters
+        
+def get_long_url(short:str):
+    """Get the long version of the URL
+
+    Args:
+        short (str): the short url
+
+    Returns:
+        str: the long version of the url
+    """
+    for i in urls.find_one( {} ):
+        for j in i['urls']:
+            if j['short'] == short:
+                return j['long']
+            else:
+                continue
+            
+add_url('tigerninja2234@gmail.com', 'https://my-cool-app.com', create_url(), True)
