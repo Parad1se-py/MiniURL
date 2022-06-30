@@ -1,5 +1,4 @@
 * {
-    background-color: whitesmoke;
     font-family: 'Fredoka', sans-serif;
     text-align: center;
 }
@@ -22,3 +21,8 @@ progress {
   progress::-moz-progress-bar {
     background: lightcolor;
   }
+
+h1 {
+    font-size: 50px;
+    color: whitesmoke;
+}

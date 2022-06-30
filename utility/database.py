@@ -14,11 +14,12 @@ client = MongoClient(MONGO_URI)
 db = client.miniurl
 urls = db.urls
 
-def create_account(_id:str, passw:str):
+def create_account(_id:str, username:str, passw:str):
     """Create a new account if not already existing
 
     Args:
         _id (str): _id of the account
+        username (str): username of the account
         passw (str): password of the account
 
     Returns:
@@ -31,6 +32,7 @@ def create_account(_id:str, passw:str):
         {
             "_id": _id,
             "password": passw,
+            "username": username,
             "urls": {},
             "free": 5,
             "paid": 0
@@ -116,20 +118,20 @@ def delete_url(account:str, short:str, free:bool):
 
     for i in urls.find_one( {"_id": account} )['urls']:
         if i['short'] == short:
-            urls.update(
-                {'_id': account},
-                {"$pull": {'urls': {'short': short}}}
-            )
             if free:
-                urls.update(
+                urls.update_one(
                     {'_id': account},
                     {'$inc': {'free': 1}}
                 )
             else:
-                urls.update(
+                urls.update_one(
                     {'_id': account},
                     {'$inc': {'paid': 1}}
                 )
+            urls.update_one(
+                {'_id': account},
+                {"$pull": {'urls': {'short': short}}}
+            )
             return [True, 'Worked']
         else:
             continue
@@ -173,3 +175,13 @@ def get_long_url(short:str):
         return str(pair['urls'][short])
     except KeyError:
         return False
+    
+def get_all_docs():
+    """FOR TEST PURPOSES ONLY
+    RETURNS ALL DOCUMENTS IN db.urls
+    """
+    docs = []
+    doc_count = urls.count_documents({})
+    for _ in range(doc_count):
+        docs.extend(iter(urls.find()))
+    return docs
