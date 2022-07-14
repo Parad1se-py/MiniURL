@@ -177,8 +177,13 @@ def get_long_url(short:str):
         return False
     
 def get_all_docs():
-    """FOR TEST PURPOSES ONLY
-    RETURNS ALL DOCUMENTS IN db.urls
+    """Returns all documents existing in the database
+
+    Args:
+        None
+
+    Returns:
+        list: all the documents existing in the database
     """
     docs = []
     doc_count = urls.count_documents({})
