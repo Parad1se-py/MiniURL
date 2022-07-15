@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+    <style>
+        h3 { color:red; }
+    </style>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Register</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+    </head>
+
+    <body>
+        <h1>Register Page</h1>
+
+        <form method="Post" action="">
+            {{ form.hidden_tag() }}
+            {{ form.username }}
+            {{ form.password }}
+            {{ form.email }}
+            {{ form.submit }}
+        </form>
+
+        <h3>Username already exists! Try another one.</h3>
+
+        <a href="{{url_for('login')}}">Already have an account? Log in</a>
+    </body>
+</html>

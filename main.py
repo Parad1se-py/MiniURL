@@ -3,11 +3,11 @@ import bcrypt
 
 from dotenv import load_dotenv
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, redirect, render_template, request, url_for
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, SubmitField
+from wtforms import PasswordField, StringField, EmailField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 
 from flask_bcrypt import Bcrypt
@@ -35,22 +35,24 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(36), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-    
+    email = db.Column(db.String(254), nullable=False)
+
 class RegisterForm(FlaskForm):
     username = StringField(validators=[InputRequired(),
                                        Length(min=4, max=36)],
                            render_kw={"placeholder": "Username"})
-    
     password = PasswordField(validators=[InputRequired(),
                                        Length(min=8, max=16)],
                            render_kw={"placeholder": "Password"})
+    email = EmailField(validators=[InputRequired(),
+                                       Length(min=8, max=16)],
+                           render_kw={"placeholder": "Email"})
     
     submit = SubmitField("Register")
     
     def validate_username(self, username):
         if existing_user_username := User.query.filter_by(username=username.data).first():
             return ValidationError("That username is already exists. Please choose a different one.")
-
 
 class LoginForm(FlaskForm):
     username = StringField(validators=[InputRequired(),
@@ -63,6 +65,12 @@ class LoginForm(FlaskForm):
     
     submit = SubmitField("Login")
 
+
+def check_username(username):
+    return not (existing_user_username := User.query.filter_by(username=username).first())
+
+def check_email(email):
+    return not (existing_user_email := User.query.filter_by(email=email).first())
 
 
 @app.route('/')
@@ -81,17 +89,16 @@ def url():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    
+
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user:
+        if user := User.query.filter_by(username=form.username.data).first() or User.query.filter_by(email=form.username.data).first():
             if bcrypt.check_password_hash(user.password, form.password.data):
                 login_user(user)
                 return redirect(url_for('dashboard'))
             else:
-                ...
-    
-    return render_template('userauth/login.html', form=form)
+                return render_template('userauth/login/login_wrong_info.html', form=form)
+
+    return render_template('userauth/login/login.html', form=form)
 
 @app.route('/dasboard', methods=['GET', 'POST'])
 @login_required
@@ -107,14 +114,18 @@ def logout():
 @app.route('/register', methods=['POST', 'GET'])
 def register():
     form = RegisterForm()
-    
+
     if form.validate_on_submit():
+        if not check_username(form.username.data):
+            return render_template('userauth/register/register_username_exists.html', form=form)
+        if not check_email(form.email.data):
+            return render_template('userauth/register/register_email_exists.html', form=form)
         hashed_password = bcrypt.generate_password_hash(form.password.data)
-        new_user = User(username=form.username.data, password=hashed_password)
+        new_user = User(username=form.username.data, password=hashed_password, email=form.email.data)
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('login'))
-    return render_template('userauth/register.html', form=form)
+    return render_template('userauth/register/register.html', form=form)
 
 @app.route('/<short_url>')
 def redirection(short_url):
