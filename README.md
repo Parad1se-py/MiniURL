@@ -6,7 +6,7 @@ Mini-URL is the only URL Shortener that lets you make URLs for completely free, 
 
 ## Authors
 
-- [@TigerNinja22](https://www.github.com/TigerNinja22)
+- [@Parad1se](https://github.com/Parad1se-py)
 
 
 ## Support
